@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  token     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  
+  // ユーザーとの関連付け（User モデルを参照）
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  username      String    @unique
+  displayName   String?
+  passwordHash  String
+  bio           String?   @db.Text
+  profileImage  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // リレーション
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  mediaUploads  Media[]
+
+  // リフレッシュトークン関連フィールド
+  refreshTokens RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  
+  // フォロー関係（多対多の自己参照）
+  following     Follow[]  @relation("following")
+  followers     Follow[]  @relation("followers")
+
+  @@index([username], name: "username_index")
+  @@index([email], name: "email_index")
+}
+
+model Post {
+  id          Int       @id @default(autoincrement())
+  content     String    @db.Text
+  userId      Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // リレーション
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments    Comment[]
+  likes       Like[]
+  media       Media[]
+
+  @@index([userId], name: "user_posts_index")
+  @@index([createdAt], name: "post_date_index")
+}
+
+model Follow {
+  id          Int       @id @default(autoincrement())
+  followerId  Int       // フォローするユーザーID
+  followingId Int       // フォローされるユーザーID
+  createdAt   DateTime  @default(now())
+  
+  // リレーション
+  follower    User      @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User      @relation("followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  // 同じユーザーの組み合わせを防ぐための一意制約
+  @@unique([followerId, followingId])
+  
+  // 複合インデックス
+  @@index([followerId, followingId], name: "follower_following_index")
+  @@index([followingId], name: "following_index")
+}
+
+model Like {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  createdAt DateTime  @default(now())
+  
+  // リレーション
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // 同じユーザーが同じ投稿に複数回いいねできないようにする
+  @@unique([userId, postId])
+  
+  // 複合インデックス
+  @@index([userId, postId], name: "user_post_like_index")
+  @@index([postId], name: "post_likes_index")
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String    @db.Text
+  userId    Int
+  postId    Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // リレーション
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId], name: "post_comments_index")
+  @@index([userId], name: "user_comments_index")
+}
+
+model Media {
+  id          Int       @id @default(autoincrement())
+  url         String    // ファイルの保存パスまたはURL
+  type        MediaType // 画像、動画、その他のメディアタイプ
+  userId      Int       // アップロードしたユーザー
+  postId      Int?      // 関連する投稿（必須ではない場合もある）
+  createdAt   DateTime  @default(now())
+  
+  // リレーション
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post        Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId], name: "post_media_index")
+  @@index([userId], name: "user_media_index")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+// リフレッシュトークンモデル
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  token     String    @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  isRevoked Boolean   @default(false)
+  
+  // ユーザーとの関連付け
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
