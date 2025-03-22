@@ -56,6 +56,9 @@ export default () => ({
   },
   app: {
     url: process.env.APP_URL || 'http://localhost:3000',
+    corsOrigins: process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(',')
+      : ['http://localhost:3000'],
   },
   auth: {
     passwordResetExpiresInHours: process.env.PASSWORD_RESET_EXPIRES_IN_HOURS
@@ -112,6 +115,13 @@ export default () => ({
       limit: process.env.THROTTLE_POSTS_LIMIT
         ? parseInt(process.env.THROTTLE_POSTS_LIMIT, 10)
         : 50,
+    },
+  },
+  security: {
+    csrf: {
+      cookieName: process.env.CSRF_COOKIE_NAME || 'XSRF-TOKEN',
+      headerName: process.env.CSRF_HEADER_NAME || 'X-XSRF-TOKEN',
+      enabled: process.env.CSRF_ENABLED !== 'false', // デフォルトで有効
     },
   },
 });
