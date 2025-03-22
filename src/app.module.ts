@@ -6,8 +6,10 @@ import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { MailModule } from './mail/mail.module';
+import { RedisModule } from './redis/redis.module';
+import { ThrottleModule } from './throttle/throttle.module';
 import appConfig from './config/app.config';
-
+import { ThrottlerGuard } from '@nestjs/throttler';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -18,12 +20,17 @@ import appConfig from './config/app.config';
     UsersModule,
     AuthModule,
     MailModule,
+    RedisModule,
+    ThrottleModule,
   ],
   providers: [
-    // グローバルJWTガードを維持（全てのエンドポイントをデフォルトで保護）
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

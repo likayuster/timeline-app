@@ -1,3 +1,32 @@
+import * as Joi from 'joi';
+
+// バリデーションスキーマの定義
+export const validationSchema = Joi.object({
+  // アプリケーション設定
+  PORT: Joi.number().default(3000),
+  NODE_ENV: Joi.string()
+    .valid('development', 'production', 'test')
+    .default('development'),
+
+  // データベース設定
+  DATABASE_URL: Joi.string().required(),
+
+  // Redis設定
+  REDIS_HOST: Joi.string().default('localhost'),
+  REDIS_PORT: Joi.number().default(6379),
+  REDIS_PASSWORD: Joi.string().allow('').default(''),
+
+  // JWT設定
+  JWT_ACCESS_SECRET: Joi.string().required(),
+  JWT_REFRESH_SECRET: Joi.string().required(),
+  JWT_ACCESS_EXPIRATION: Joi.string().default('15m'),
+  JWT_REFRESH_EXPIRATION: Joi.string().default('7d'),
+
+  // レート制限設定
+  THROTTLE_TTL: Joi.number().default(60),
+  THROTTLE_LIMIT: Joi.number().default(100),
+});
+
 export default () => ({
   port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
