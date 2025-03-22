@@ -39,6 +39,10 @@ model User {
   passwordHash  String
   bio           String?   @db.Text
   profileImage  String?
+
+  provider      String?
+  providerId    String?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
@@ -56,6 +60,7 @@ model User {
   following     Follow[]  @relation("following")
   followers     Follow[]  @relation("followers")
 
+  @@index([provider, providerId], name: "provider_providerId_index")
   @@index([username], name: "username_index")
   @@index([email], name: "email_index")
 }

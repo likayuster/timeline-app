@@ -1,7 +1,16 @@
 export default () => ({
   port: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
+  nodeEnv: process.env.NODE_ENV || 'development',
   database: {
     url: process.env.DATABASE_URL,
+  },
+
+  // Redis 設定（新規追加）
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379,
+    password: process.env.REDIS_PASSWORD || '',
+    db: process.env.REDIS_DB ? parseInt(process.env.REDIS_DB, 10) : 0,
   },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET,
@@ -23,6 +32,57 @@ export default () => ({
     passwordResetExpiresInHours: process.env.PASSWORD_RESET_EXPIRES_IN_HOURS
       ? parseInt(process.env.PASSWORD_RESET_EXPIRES_IN_HOURS, 10)
       : 1,
+    oauth: {
+      // Google OAuth設定
+      google: {
+        clientID: process.env.GOOGLE_CLIENT_ID || '',
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+        callbackURL:
+          process.env.GOOGLE_CALLBACK_URL ||
+          'http://localhost:3000/auth/google/callback',
+        scope: ['email', 'profile'],
+      },
+      // GitHub OAuth設定
+      github: {
+        clientID: process.env.GITHUB_CLIENT_ID || '',
+        clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+        callbackURL:
+          process.env.GITHUB_CALLBACK_URL ||
+          'http://localhost:3000/auth/github/callback',
+        scope: ['user:email'],
+      },
+      // フロントエンドリダイレクト設定（認証成功後のリダイレクト先）
+      successRedirect:
+        process.env.OAUTH_SUCCESS_REDIRECT ||
+        'http://localhost:3000/auth/success',
+      // 認証失敗時のリダイレクト先
+      failureRedirect:
+        process.env.OAUTH_FAILURE_REDIRECT ||
+        'http://localhost:3000/auth/login',
+    },
   },
-  nodeEnv: process.env.NODE_ENV || 'development',
+  // API レート制限設定（新規追加）
+  throttle: {
+    ttl: process.env.THROTTLE_TTL ? parseInt(process.env.THROTTLE_TTL, 10) : 60,
+    limit: process.env.THROTTLE_LIMIT
+      ? parseInt(process.env.THROTTLE_LIMIT, 10)
+      : 100,
+    // エンドポイント別設定（オプション）
+    auth: {
+      ttl: process.env.THROTTLE_AUTH_TTL
+        ? parseInt(process.env.THROTTLE_AUTH_TTL, 10)
+        : 60,
+      limit: process.env.THROTTLE_AUTH_LIMIT
+        ? parseInt(process.env.THROTTLE_AUTH_LIMIT, 10)
+        : 20,
+    },
+    posts: {
+      ttl: process.env.THROTTLE_POSTS_TTL
+        ? parseInt(process.env.THROTTLE_POSTS_TTL, 10)
+        : 60,
+      limit: process.env.THROTTLE_POSTS_LIMIT
+        ? parseInt(process.env.THROTTLE_POSTS_LIMIT, 10)
+        : 50,
+    },
+  },
 });
