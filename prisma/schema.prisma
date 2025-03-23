@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  seed = "ts-node prisma/seed.ts"
 }
 
 datasource db {
@@ -59,6 +60,8 @@ model User {
   // フォロー関係（多対多の自己参照）
   following     Follow[]  @relation("following")
   followers     Follow[]  @relation("followers")
+
+  roles        UserRole[] 
 
   @@index([provider, providerId], name: "provider_providerId_index")
   @@index([username], name: "username_index")
@@ -171,4 +174,59 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+}
+
+// ロールモデル - ユーザーが持つ役割（例: admin, moderator, user）
+model Role {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // 関連
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+// 権限モデル - 特定の操作に対する権限（例: create:post, delete:comment）
+model Permission {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // 関連
+  roles       RolePermission[]
+}
+
+// ユーザーとロールの中間テーブル（多対多関係）
+model UserRole {
+  userId    Int
+  roleId    Int
+  assignedAt DateTime  @default(now())
+  
+  // 関連
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+// ロールと権限の中間テーブル（多対多関係）
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  assignedAt   DateTime  @default(now())
+  
+  // 関連
+  role         Role        @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
 }

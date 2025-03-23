@@ -1,51 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as csrfLib from 'csrf';
-import { Request, Response, NextFunction } from 'express';
-
-// リクエストボディを拡張するためのインターフェース
-interface CsrfRequestBody {
-  _csrf?: string;
-  [key: string]: any;
-}
-
-// クッキーのインターフェース
-interface CsrfCookies {
-  [key: string]: string;
-}
-
-// 拡張したリクエスト型
-interface CsrfRequest extends Request {
-  body: CsrfRequestBody;
-  cookies: CsrfCookies;
-}
-
-// Define proper interface for the CSRF tokens library
-interface CsrfTokens {
-  secretSync(): string;
-  create(secret: string): string;
-  verify(secret: string, token: string): boolean;
-}
-
-// Define cookie options interface
-interface CookieOptions {
-  httpOnly: boolean;
-  sameSite: 'strict' | 'lax' | 'none';
-  secure: boolean;
-  path: string;
-  maxAge: number;
-}
+import * as csrf from 'csrf';
 
 @Injectable()
 export class CsrfService {
-  private readonly tokens: CsrfTokens;
+  private readonly tokens: any;
   private readonly csrfCookieName: string;
   private readonly headerName: string;
-  private readonly cookieOptions: CookieOptions;
+  private readonly cookieOptions: any;
 
   constructor(private readonly configService: ConfigService) {
-    // CSRFトークン生成ライブラリの初期化（適切な型を使用）
-    this.tokens = new csrfLib() as CsrfTokens;
+    // CSRFトークン生成ライブラリの初期化
+    this.tokens = new csrf();
 
     // 設定値の読み込み（デフォルト値を設定）
     this.csrfCookieName = this.configService.get<string>(
@@ -74,7 +40,8 @@ export class CsrfService {
    * @returns 生成されたトークン
    */
   generateToken(): string {
-    // シークレットの生成（型安全に）
+    // シークレットの生成
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const secret = this.tokens.secretSync();
     // シークレットからトークンを作成
     return this.tokens.create(secret);
@@ -95,7 +62,7 @@ export class CsrfService {
    * @param res Expressのレスポンスオブジェクト
    * @param token 設定するトークン
    */
-  setTokenCookie(res: Response, token: string): void {
+  setTokenCookie(res: any, token: string): void {
     res.cookie(this.csrfCookieName, token, this.cookieOptions);
   }
 
@@ -104,7 +71,7 @@ export class CsrfService {
    * 新しいトークンを生成してクッキーに設定
    */
   getCsrfTokenMiddleware() {
-    return (req: CsrfRequest, res: Response, next: NextFunction): void => {
+    return (req, res, next) => {
       const token = this.generateToken();
       this.setTokenCookie(res, token);
       next();
@@ -116,11 +83,7 @@ export class CsrfService {
    * リクエストに含まれるトークンを検証
    */
   protectCsrfMiddleware() {
-    return (
-      req: CsrfRequest,
-      res: Response,
-      next: NextFunction
-    ): void | Response => {
+    return (req, res, next) => {
       // GET、HEAD、OPTIONSリクエストは検証をスキップ（安全なメソッド）
       if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
         return next();
@@ -128,11 +91,11 @@ export class CsrfService {
 
       // リクエストからトークンを取得（ヘッダーまたはボディから）
       const token =
-        (req.headers[this.headerName.toLowerCase()] as string) ||
-        (req.body && (req.body._csrf as string));
+        req.headers[this.headerName.toLowerCase()] ||
+        (req.body && req.body._csrf);
 
       // クッキーからシークレットを取得
-      const secret = req.cookies[this.csrfCookieName] || '';
+      const secret = req.cookies[this.csrfCookieName];
 
       // トークンまたはシークレットが存在しない場合
       if (!token || !secret) {
