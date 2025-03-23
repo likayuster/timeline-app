@@ -1,6 +1,6 @@
 // src/app.module.ts
 import { Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
@@ -12,6 +12,9 @@ import { RedisModule } from './redis/redis.module';
 import { ThrottleModule } from './throttle/throttle.module';
 import { SecurityModule } from './security/security.module';
 import { SanitizeInterceptor } from './security/sanitize.interceptor';
+import { RolesModule } from './roles/roles.module';
+import { RolesGuard } from './auth/guards/roles.guard';
+import { PrismaService } from './prisma/prisma.service';
 import appConfig from './config/app.config';
 
 @Module({
@@ -26,7 +29,8 @@ import appConfig from './config/app.config';
     MailModule,
     RedisModule,
     ThrottleModule,
-    SecurityModule, // セキュリティモジュールを追加
+    SecurityModule,
+    RolesModule, // セキュリティモジュールを追加
   ],
   providers: [
     {
@@ -40,6 +44,13 @@ import appConfig from './config/app.config';
     {
       provide: APP_INTERCEPTOR,
       useClass: SanitizeInterceptor, // サニタイズインターセプターをグローバルに適用
+    },
+    {
+      provide: APP_GUARD,
+      useFactory: (reflector: Reflector, prismaService: PrismaService) => {
+        return new RolesGuard(reflector, prismaService);
+      },
+      inject: [Reflector, PrismaService],
     },
   ],
 })
