@@ -4,12 +4,12 @@ import {
   ExecutionContext,
   UnauthorizedException,
   ForbiddenException,
+  Inject,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Request } from 'express'; // Expressのリクエスト型をインポート
-import { PrismaClient } from '@prisma/client';
 
 // ユーザーオブジェクトの型を定義
 interface UserInfo {
@@ -28,7 +28,7 @@ interface RequestWithUser extends Request {
 export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private prisma: PrismaService & PrismaClient
+    @Inject(PrismaService) private prisma: PrismaService
   ) {}
 
   /**

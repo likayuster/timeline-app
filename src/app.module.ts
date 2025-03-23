@@ -33,7 +33,6 @@ import appConfig from './config/app.config';
     RolesModule,
   ],
   providers: [
-    PrismaService, // Explicitly provide PrismaService in the AppModule
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
