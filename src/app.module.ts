@@ -30,9 +30,10 @@ import appConfig from './config/app.config';
     RedisModule,
     ThrottleModule,
     SecurityModule,
-    RolesModule, // セキュリティモジュールを追加
+    RolesModule,
   ],
   providers: [
+    PrismaService, // Explicitly provide PrismaService in the AppModule
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
@@ -43,7 +44,7 @@ import appConfig from './config/app.config';
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: SanitizeInterceptor, // サニタイズインターセプターをグローバルに適用
+      useClass: SanitizeInterceptor,
     },
     {
       provide: APP_GUARD,
