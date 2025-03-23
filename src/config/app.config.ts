@@ -61,6 +61,9 @@ export default () => ({
       : ['http://localhost:3000'],
   },
   auth: {
+    passwordSaltRounds: process.env.PASSWORD_SALT_ROUNDS
+      ? parseInt(process.env.PASSWORD_SALT_ROUNDS, 10)
+      : 10,
     passwordResetExpiresInHours: process.env.PASSWORD_RESET_EXPIRES_IN_HOURS
       ? parseInt(process.env.PASSWORD_RESET_EXPIRES_IN_HOURS, 10)
       : 1,

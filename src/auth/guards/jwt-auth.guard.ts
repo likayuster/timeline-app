@@ -39,6 +39,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   /**
    * 認証エラー時の処理をカスタマイズします
    * @param err エラーオブジェクト
+   * @param user 認証されたユーザー（存在する場合）
+   * @param info 認証情報
    */
   handleRequest(err: any, user: any, info: any): any {
     // エラーがある場合、または認証されたユーザーが存在しない場合

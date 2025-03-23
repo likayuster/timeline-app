@@ -1,15 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { JwtPayload } from '../auth.service';
+import { UsersService } from '../../users/users.service';
+import { User } from '@prisma/client';
+
+// JWTペイロードの型定義
+export interface JwtPayload {
+  sub: number; // ユーザーID
+  username?: string; // ユーザー名（オプション）
+  roles?: string[]; // ユーザーロール（オプション）
+  iat?: number; // 発行時刻
+  exp?: number; // 有効期限
+  [key: string]: any; // その他の任意のプロパティ
+}
+
+// 動的なプロパティアクセスのための型
+type DynamicUser = User & {
+  [key: string]: any; // 任意の追加プロパティを許可
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private configService: ConfigService
-    // ここで必要に応じてUserServiceを注入することもできます
-    // private userService: UserService,
+    private configService: ConfigService,
+    private usersService: UsersService
   ) {
     const jwtSecret = configService.get<string>('jwt.accessSecret');
 
@@ -34,21 +49,45 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * @returns 認証されたユーザー情報（リクエストのuser属性に設定されます）
    */
   async validate(payload: JwtPayload): Promise<any> {
-    // JWTのペイロードから必要な情報を取得
-    const { sub: userId } = payload;
+    try {
+      // ペイロードからユーザーIDを取得
+      const userId = payload.sub;
 
-    // ここでユーザーの存在確認や追加の検証を行うことができます
-    // 例: const user = await this.userService.findById(userId);
-    // if (!user) { throw new UnauthorizedException('ユーザーが見つかりません'); }
+      if (!userId) {
+        throw new UnauthorizedException('Invalid token payload');
+      }
 
-    // 将来的にはここでユーザーデータベースとの連携など実際の非同期処理を行う
-    // 現段階では単純に非同期処理をシミュレートして ESLint エラーを解消
-    await Promise.resolve();
+      // ユーザーIDを使ってデータベースからユーザー情報を取得
+      const userFromDb = await this.usersService.findById(userId);
 
-    // 検証が成功した場合、このオブジェクトはrequset.userとして設定されます
-    return {
-      userId,
-      ...payload,
-    };
+      if (!userFromDb) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // インデックスシグネチャを使用して型安全にアクセス
+      const user = userFromDb as DynamicUser;
+
+      // 型安全なプロパティ存在チェックと値のチェック
+      if ('isActive' in user && user.isActive === false) {
+        throw new UnauthorizedException('User account is deactivated');
+      }
+
+      // リクエストのユーザーオブジェクトとして返す
+      // パスワードハッシュなどの機密情報は除外
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { passwordHash, ...result } = user;
+
+      // ペイロードからロール情報を追加（存在する場合）
+      if (payload.roles) {
+        result.roles = payload.roles;
+      }
+
+      return result;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Token validation failed');
+    }
   }
 }

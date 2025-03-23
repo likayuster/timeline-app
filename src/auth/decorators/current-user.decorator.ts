@@ -3,8 +3,11 @@ import { Request } from 'express';
 
 // ユーザーオブジェクトの型を定義
 export interface UserPayload {
-  userId: number;
-  [key: string]: any; // 追加の任意のプロパティを許可
+  id: number;
+  email: string;
+  username: string;
+  roles?: string[];
+  [key: string]: any; // その他のプロパティ
 }
 
 // Express の Request 型を拡張して user プロパティを定義

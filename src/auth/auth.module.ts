@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
+import { setConfigService } from './utils/password.utils';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
@@ -46,4 +47,11 @@ import { UsersModule } from '../users/users.module';
     PasswordResetService,
   ],
 })
-export class AuthModule {}
+export class AuthModule implements OnModuleInit {
+  constructor(private configService: ConfigService) {}
+
+  onModuleInit() {
+    // パスワードユーティリティにConfigServiceを提供
+    setConfigService(this.configService);
+  }
+}
