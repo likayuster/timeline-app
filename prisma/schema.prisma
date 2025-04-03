@@ -50,8 +50,8 @@ model User {
   // リレーション
   posts         Post[]
   comments      Comment[]
-  likes         Like[]
   mediaUploads  Media[]
+  bookmarks Bookmark[]
 
   // リフレッシュトークン関連フィールド
   refreshTokens RefreshToken[]
@@ -78,8 +78,8 @@ model Post {
   // リレーション
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments    Comment[]
-  likes       Like[]
   media       Media[]
+  bookmarks Bookmark[]
 
   @@index([userId], name: "user_posts_index")
   @@index([createdAt], name: "post_date_index")
@@ -103,7 +103,7 @@ model Follow {
   @@index([followingId], name: "following_index")
 }
 
-model Like {
+model Bookmark {
   id        Int       @id @default(autoincrement())
   userId    Int
   postId    Int
@@ -113,12 +113,12 @@ model Like {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  // 同じユーザーが同じ投稿に複数回いいねできないようにする
+  // 同じユーザーが同じ投稿を複数回ブックマークできないようにする
   @@unique([userId, postId])
   
-  // 複合インデックス
-  @@index([userId, postId], name: "user_post_like_index")
-  @@index([postId], name: "post_likes_index")
+  // インデックス（効率的な検索のため）
+  @@index([userId], name: "user_bookmarks_index")
+  @@index([postId], name: "post_bookmarks_index")
 }
 
 model Comment {

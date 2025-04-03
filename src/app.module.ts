@@ -16,6 +16,7 @@ import { RolesModule } from './roles/roles.module';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { PrismaService } from './prisma/prisma.service';
 import appConfig from './config/app.config';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import appConfig from './config/app.config';
     ThrottleModule,
     SecurityModule,
     RolesModule,
+    SearchModule,
   ],
   providers: [
     {
